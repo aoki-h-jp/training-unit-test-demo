@@ -1,0 +1,346 @@
+requirements:
+  title: "単体テスト (入門)"
+  target_audience: 
+    - 単体テスト初心者・TDD導入検討者
+    - フロント・バックエンド、サーバレス開発者
+    - 全般的な自社エンジニア
+  duration: 60
+  objectives:
+    high_level:
+      - 単体テストの基礎概念理解
+      - VitestとTDDサイクルを通じてAWS Lambda+Express環境での品質保証習得
+    detailed:
+      - DynamoDBを背後に控えた在庫管理APIを例に、GET/POST/PUT/DELETEをTDDで段階的に実装
+      - クエリパラメータでフィルタするGET要求や、POST/PUT/DELETEでのアイテム操作をテストで導く
+      - watchモードで即時フィードバックを得ながら仕様明確化と開発効率向上を実感
+  prerequisites:
+    environment:
+      - Node.js/NPM環境
+      - AWS Lambda, API Gateway, DynamoDB, Serverless Framework基礎知識
+    codebase:
+      - Vitest導入済み
+      - handler.js: ExpressをLambdaで動作
+      - logic.js: ビジネスロジック（初期は空に近い状態）
+      - DynamoDB相当のモックデータストア（メモリ上で代替）
+
+scenario:
+  phases:
+    introduction:
+      duration: 15
+      steps:
+        greeting_and_goal:
+          - "単体テストとTDDの基本理解、Vitest活用"
+        unit_testing_concept:
+          definition:
+            - "単体テストで機能期待値を明確化、品質保証"
+        frameworks_overview:
+          languages:
+            javascript:
+              jest:
+                - "広く使われているテストランナー"
+                - "describe/it構文でテストケースをグループ化"
+                - "expect().toBe()などの直感的なアサーション"
+                - "モック機能が充実（jest.fn(), jest.spyOn()）"
+                - "スナップショットテストのサポート"
+              vitest:
+                - "Viteベースの高速なテストランナー"
+                - "Jestと互換性のある構文（describe/it, expect）"
+                - "TypeScriptのネイティブサポート"
+                - "ESM対応とHMRによる高速な実行"
+                - "並列実行によるパフォーマンス向上"
+            python:
+              pytest:
+                - "シンプルな関数ベースのテスト記法"
+                - "強力なフィクスチャシステム（@pytest.fixture）"
+                - "パラメータ化テストが容易（@pytest.mark.parametrize）"
+                - "プラグインエコシステムが充実"
+                - "詳細なアサーションメッセージ"
+              unittest:
+                - "Pythonの標準ライブラリ"
+                - "クラスベースのテスト構造"
+                - "setUp/tearDownによるテスト前後処理"
+                - "self.assertEqualなどの組み込みアサーション"
+                - "テストスイート機能でテストを整理"
+            java:
+              junit:
+                - "Javaで最も一般的なテストフレームワーク"
+                - "アノテーションベースの設定（@Test, @Before）"
+                - "豊富なアサーションメソッド"
+                - "パラメータ化テストのサポート"
+                - "ルールによるテスト振る舞いのカスタマイズ"
+              testng:
+                - "JUnitの代替として設計"
+                - "依存関係を持つテストの実行制御"
+                - "柔軟なテスト設定（XML設定ファイル）"
+                - "データプロバイダによる効率的なデータ駆動テスト"
+                - "並列実行のネイティブサポート"
+        benefits_of_unit_testing:
+          - type: "バグの早期発見と回帰防止"
+            why: "実装段階で欠陥を見つけ修正でき、後で再発防止"
+            scenario: "新機能追加時に既存機能が壊れていないか即座に把握"
+            situation: "デプロイ直前にテスト全通過で不安要素減少"
+          - type: "コード変更時の安心感"
+            why: "リファクタや機能拡張時にテストが品質を保証"
+            scenario: "仕様変更時にテスト通過=要件遵守を確認"
+            situation: "大人数開発でも統一的な品質基準維持"
+          - type: "開発スピード向上（短いフィードバックループ）"
+            why: "watchモードで即結果返り、問題発生を最小限で対応"
+            scenario: "コード保存即テスト実行で迅速な修正と検証"
+            situation: "短納期プロジェクトでも品質・速度両立"
+        pitfalls_and_bad_practices:
+          examples:
+            - type: "過剰なモック"
+              why: "複雑なモック構築でテスト意図不明瞭、保守性低下"
+              scenario: "外部APIを過剰モックし、実際のビジネス要件から乖離"
+              situation: "変更時にモック更新が煩雑"
+            - type: "可読性の低いテストコード"
+              why: "理解困難で将来のメンテナンス阻害"
+              scenario: "新人がテスト読めず誤った修正を誘発"
+              situation: "テスト放棄で品質劣化"
+            - type: "プロダクションコードとの過度な結合"
+              why: "内部実装依存は変更耐性低下、テスト維持コスト増"
+              scenario: "プライベートメソッド依存でリファクタ困難"
+              situation: "テストが足枷となり開発停滞"
+        tdd_overview:
+          concept:
+            - type: "TDD基本サイクル(テスト→実装→リファクタ)"
+              why:
+                - "テストで要件確定→実装→テスト通過で品質保証"
+                - "失敗テストから必要機能のみ実装で無駄排除"
+              scenario:
+                - "新機能仕様をテストで先行定義、実装でパスを目指す"
+              situation:
+                - "曖昧な要件をテスト化することで要求明確化"
+            - type: "仕様明確化"
+              why: "テスト先行で期待する入出力を明示し要件固め"
+              scenario: "追加機能をテストコードが仕様書代わりに"
+              situation: "ステークホルダー合意形成容易化"
+            - type: "反復的改善"
+              why: "小さいステップで継続的改良可能"
+              scenario: "少しずつテスト増強→実装洗練"
+              situation: "レガシーシステム逐次改善"
+          plan:
+            steps:
+              - "一般的な概念説明後、具体例としてビジネス要件に基づくAPIをTDDで実装デモ"
+            why:
+              - "実務的ストーリーでTDDの有用性を体感"
+            scenario:
+              - "後半で在庫管理システムを例示し、GET/POST/PUT/DELETE実装をTDDで進行"
+            situation:
+              - "業務上の変化や新要件にも素早く対応可能"
+
+    overview_of_testing:
+      duration: 5
+      steps:
+        reaffirm_concepts:
+          - "単体テスト: 全体品質戦略の一部、短期的コストが長期的利益に"
+        lambda_relationship:
+          - "AWS Lambda + Express構成: サーバレスでHTTPハンドリング"
+          - "why: ロジックを独立させてテストしやすくする"
+          - "scenario: API Gateway経由でイベント受信、logic.jsでビジネスルール処理"
+          - "situation: 大規模化してもテストが品質を支える"
+
+    introducing_vitest:
+      duration: 5
+      steps:
+        vitest_basics:
+          - "Jest類似APIで学習容易"
+          - "why: 低コストでチームに広められる"
+          - "scenario: 新規参加メンバーもすぐテスト合流"
+        watch_mode:
+          - "保存時自動テストで即時フィードバック"
+          - "scenario: バグ修正サイクル短縮"
+        config:
+          - "vitest.config.jsでフレキシブルな設定"
+          - "scenario: ディレクトリ単位テストやプラグイン適用で拡張性確保"
+
+    demonstration_setup:
+      duration: 5
+      steps:
+        introduce_business_context:
+          theme: "在庫管理システム"
+          why:
+            - "抽象概念から一歩踏み込み、実務想定でTDDを体験"
+          scenario:
+            - "/inventoryエンドポイントで在庫アイテムを操作"
+          situation:
+            - "GETで在庫確認、POSTで新商品登録、PUTで在庫更新、DELETEで商品削除など"
+        initial_structure:
+          - "handler.js: Lambda上でExpressを動かすラッパ"
+          - "logic.js: ビジネスロジック格納（初期は簡易構造）"
+          - "why: ロジックを独立しテスト容易、インフラ依存減少"
+    
+    tdd_approach:
+      duration: 20
+      steps:
+        scenario_overview:
+          endpoint: "/inventory"
+          GET:
+            concept: "商品の在庫を取得するAPI"
+            workflow:
+              - 何も指定しない→全在庫取得
+              - idクエリパラメータ指定→該当アイテムのみ取得
+              - 400エラー(id必須)
+              - 404エラー(指定アイテムなし)
+              - 500エラー(データベースエラー)
+          POST: 新アイテム登録
+            concept: "新商品を登録するAPI"
+            workflow:
+              - bodyにid, name, quantityを指定
+              - 400エラー(id, name, quantity必須)
+              - 500エラー(データベースエラー)
+          PUT: 既存アイテム更新
+            concept: "既存商品の在庫を更新するAPI"
+            workflow:
+              - bodyにid, quantityを指定
+              - 400エラー(id, quantity必須)
+              - 404エラー(指定アイテムなし)
+              - 500エラー(データベースエラー)
+          DELETE: アイテム削除
+            concept: "既存商品を削除するAPI"
+            workflow:
+              - idクエリパラメータ指定
+              - 404エラー(指定アイテムなし)
+              - 500��ラー(データベースエラー)
+
+        get_endpoint:
+          step_1_no_items:
+            write_test:
+              - "logic.test.jsでgetInventoryテスト開始"
+              - "最初のテスト: id未指定の場合、在庫空なら[]返す期待"
+              - "why: 最小要件定義で仕様固め"
+            run_test:
+              - "npx vitest --watchでテスト(失敗想定)"
+            implement_logic:
+              - "logic.getInventory({id:undefined}) → []返す実装"
+              - "テストパス: 初期要件クリア"
+            integrate_handler:
+              - "handler.jsにGET /inventory追加"
+              - "テスト再実行でAPIでの全取得確認"
+          
+          step_2_add_item_then_get_all:
+            write_test:
+              - "在庫に{id:'abc',name:'Widget',quantity:10}を追加後、id未指定GETで[{id:'abc',...}]返す期待"
+              - "why: 追加データが全取得で確認可能か"
+            run_test:
+              - "テスト(失敗)→実装へ"
+            implement_logic_for_data_store:
+              - "モックDynamoDBへアイテム保存機能"
+              - "getInventoryで全リスト取得時、それを返す処理"
+              - "テスト再実行でパス: 追加されたアイテムを全取得可��"
+          
+          step_3_get_by_id:
+            write_test:
+              - "idクエリパラメータ指定時、特定のアイテムのみ返すテスト"
+              - "例: ?id=abc → {id:'abc',name:'Widget',quantity:10}"
+              - "why: 部分取得仕様確定"
+            run_test:
+              - "テスト(失敗)を確認"
+            implement_logic_get_by_id:
+              - "logic.getInventory({id:'abc'})で該当アイテム1件取得実装"
+              - "テストパスで単品取得機能完成"
+            integrate_handler_for_id:
+              - "handler.jsでクエリパラメータidを受け取りlogicに渡す"
+              - "テスト通過でAPIから単品取得可能"
+          
+          step_4_get_by_id_not_found:
+            write_test:
+              - "存在しないid指定時は空、または404エラー返すテスト"
+              - "ここでは404を返すと定義"
+              - "why: エラーハンドリング仕様決定"
+            run_test:
+              - "テスト(失敗)→実装"
+            implement_error_handling:
+              - "logic.getInventory({id:'xxx'})が存在しない場合エラーをthrow"
+              - "handler側でcatchし404返却"
+              - "テストパスでエラーハンドリング完成"
+        
+        post_endpoint:
+          write_test:
+            - "POST /inventoryに{name:'Gadget', quantity:5}送ると{id:auto-generated, name:'Gadget',quantity:5}返すテスト"
+            - "why: 新規追加仕様明確化"
+          run_test:
+            - "テスト失敗→実装"
+          implement_logic_add:
+            - "logic.addItem(name,quantity) DynamoDBモックに保存"
+            - "idはUUID生成など仮実装"
+            - "テストパスで新規登録成功"
+          integrate_handler:
+            - "handler.jsにPOST /inventory追加、body解析��てlogic.addItem呼び出し"
+            - "テスト再実行でPOST機能完成"
+        
+        put_endpoint:
+          write_test:
+            - "PUT /inventory/:idに{quantity:15}送信で既存アイテムquantity更新テスト"
+            - "why: 更新要求仕様確立"
+          run_test:
+            - "失敗→実装"
+          implement_logic_update:
+            - "logic.updateItem(id,newQuantity)で既存アイテム更新"
+            - "該当アイテムなければ404エラー"
+            - "テストパスで更新成功"
+          integrate_handler:
+            - "handler.jsにPUT /inventory/:id追加"
+            - "テスト通過し更新機能完成"
+        
+        delete_endpoint:
+          write_test:
+            - "DELETE /inventory/:idで指定アイテム削除テスト"
+            - "why: 削除仕様明確化"
+          run_test:
+            - "失敗→実装"
+          implement_logic_delete:
+            - "logic.removeItem(id)で該当アイテム削除"
+            - "なければ404エラー"
+            - "テストパスで削除成功"
+          integrate_handler:
+            - "handler.jsにDELETE /inventory/:id追加"
+            - "テストグリーンで全CRUD完成"
+        
+    best_practices:
+      duration: 5
+      steps:
+        recommendations:
+          - type: "テストを仕様書化"
+            why: "テスト読みで要件把握可能"
+            scenario: "id指定取得や404処理もテストで明示"
+          - type: "小さなステップでTDD"
+            why: "問題箇所特定容易、迷わず実装"
+            scenario: "GET全取得→GET単品取得→GETエラー処理と小刻みに増強"
+          - type: "watchモード活用"
+            why: "即結果でフィードバックループ短縮"
+            scenario: "POST実装中に保存→テスト反応で速やかに修正"
+    
+    conclusion:
+      duration: 5
+      steps:
+        summary:
+          - type: "理論から実践への展開"
+            why: "抽象的な単体テスト・TDD概念を実務的な文脈で理解"
+            scenario:
+              - "フレームワーク比較から始まり具体的なAPI実装まで段階的に学習"
+              - "在庫管理という身近な業務ドメインで実践的に習得"
+            outcomes:
+              - "テスト駆動の開発サイクルを体得"
+              - "品質と開発効率の両立を実感"
+
+          - type: "テストによる仕様駆動"
+            why: "テストコードを通じて要件を明確化し、実装の指針として活用"
+            scenario:
+              - "GETエンドポイントでの単品取得や一覧取得の使い分け"
+              - "エラーケース（404, 400）の適切な処理"
+              - "CRUD操作全般での入出力仕様の明確化"
+            outcomes:
+              - "テストが生きた仕様書として機能"
+              - "チーム内での合意形成ツールとして活用可能"
+
+          - type: "テスト容易性の設計"
+            why: "外部依存を適切に分離し、テスト実行の信頼性と速度を確保"
+            scenario:
+              - "DynamoDBをメモリ上のモックで代替"
+              - "ビジネスロジックとインフラ層の明確な分離"
+              - "handler.jsとlogic.jsの責務分割"
+            outcomes:
+              - "テスト実行時間の短縮"
+              - "インフラに依存しない安定したテスト"
+              - "モジュール間の依存関係の明確化"
