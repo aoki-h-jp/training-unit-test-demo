@@ -1,16 +1,13 @@
-import { DataStore, InventoryItem } from './types';
+import { InventoryItem } from './types';
 
-export class MemoryDataStore implements DataStore {
+interface Store {
   items: Map<string, InventoryItem>;
-
-  constructor() {
-    this.items = new Map<string, InventoryItem>();
-  }
-
-  clear() {
-    this.items.clear();
-  }
+  clear: () => void;
 }
 
-// シングルトンとしてストアを提供
-export const store = new MemoryDataStore(); 
+export const store: Store = {
+  items: new Map(),
+  clear: function () {
+    this.items.clear();
+  }
+}; 

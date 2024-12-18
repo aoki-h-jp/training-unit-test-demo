@@ -3,27 +3,27 @@ import { store } from './store';
 import { InventoryItem } from './types';
 
 export class InventoryError extends Error {
-  constructor(public statusCode: number, message: string) {
+  constructor(message: string, public statusCode: number) {
     super(message);
     this.name = 'InventoryError';
   }
 }
 
-export const getInventory = ({ id }: { id?: string }) => {
+export const getInventory = async ({ id }: { id?: string }) => {
   if (!id) {
     return Array.from(store.items.values());
   }
 
   const item = store.items.get(id);
   if (!item) {
-    throw new InventoryError(404, `Item with id ${id} not found`);
+    throw new InventoryError(`Item with id ${id} not found`, 404);
   }
   return item;
 };
 
-export const addItem = ({ name, quantity }: { name: string; quantity: number }) => {
+export const addItem = async ({ name, quantity }: { name: string; quantity: number }) => {
   if (!name || quantity === undefined) {
-    throw new InventoryError(400, 'Name and quantity are required');
+    throw new InventoryError('Name and quantity are required', 400);
   }
 
   const id = uuidv4();
@@ -32,14 +32,14 @@ export const addItem = ({ name, quantity }: { name: string; quantity: number }) 
   return newItem;
 };
 
-export const updateItem = ({ id, quantity }: { id: string; quantity: number }) => {
+export const updateItem = async ({ id, quantity }: { id: string; quantity: number }) => {
   if (!id || quantity === undefined) {
-    throw new InventoryError(400, 'Id and quantity are required');
+    throw new InventoryError('Id and quantity are required', 400);
   }
 
   const item = store.items.get(id);
   if (!item) {
-    throw new InventoryError(404, `Item with id ${id} not found`);
+    throw new InventoryError(`Item with id ${id} not found`, 404);
   }
 
   const updatedItem = { ...item, quantity };
@@ -47,13 +47,13 @@ export const updateItem = ({ id, quantity }: { id: string; quantity: number }) =
   return updatedItem;
 };
 
-export const deleteItem = ({ id }: { id: string }) => {
+export const deleteItem = async ({ id }: { id: string }) => {
   if (!id) {
-    throw new InventoryError(400, 'Id is required');
+    throw new InventoryError('Id is required', 400);
   }
 
   if (!store.items.has(id)) {
-    throw new InventoryError(404, `Item with id ${id} not found`);
+    throw new InventoryError(`Item with id ${id} not found`, 404);
   }
 
   store.items.delete(id);

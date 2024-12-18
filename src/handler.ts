@@ -4,9 +4,9 @@ import { getInventory, addItem, updateItem, deleteItem, InventoryError } from '.
 const app = express();
 app.use(express.json());
 
-app.get('/inventory', (req, res) => {
+app.get('/inventory', async (req, res) => {
   try {
-    const result = getInventory({ id: req.query.id as string | undefined });
+    const result = await getInventory({ id: req.query.id as string | undefined });
     res.json(result);
   } catch (error) {
     if (error instanceof InventoryError) {
@@ -17,9 +17,9 @@ app.get('/inventory', (req, res) => {
   }
 });
 
-app.post('/inventory', (req, res) => {
+app.post('/inventory', async (req, res) => {
   try {
-    const result = addItem(req.body);
+    const result = await addItem(req.body);
     res.status(201).json(result);
   } catch (error) {
     if (error instanceof InventoryError) {
@@ -30,9 +30,9 @@ app.post('/inventory', (req, res) => {
   }
 });
 
-app.put('/inventory/:id', (req, res) => {
+app.put('/inventory/:id', async (req, res) => {
   try {
-    const result = updateItem({ id: req.params.id, quantity: req.body.quantity });
+    const result = await updateItem({ id: req.params.id, quantity: req.body.quantity });
     res.json(result);
   } catch (error) {
     if (error instanceof InventoryError) {
@@ -43,9 +43,9 @@ app.put('/inventory/:id', (req, res) => {
   }
 });
 
-app.delete('/inventory/:id', (req, res) => {
+app.delete('/inventory/:id', async (req, res) => {
   try {
-    const result = deleteItem({ id: req.params.id });
+    const result = await deleteItem({ id: req.params.id });
     res.json(result);
   } catch (error) {
     if (error instanceof InventoryError) {
